@@ -5,8 +5,10 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import colors from '../assets/colors';
+import HapticFeedback from 'react-native-haptic-feedback';
 
 interface ButtonProps {
   title: string;
@@ -20,21 +22,36 @@ const CustomButton: React.FC<ButtonProps> = ({
   backgroundColor = colors.primary,
 }) => {
   const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{scale: scale.value}],
+    opacity: opacity.value,
   }));
+
+  const handlePress = () => {
+    HapticFeedback.trigger('impactLight'); // Light vibration feedback
+    onPress();
+  };
 
   return (
     <Pressable
-      onPressIn={() => (scale.value = withSpring(0.95))}
-      onPressOut={() => (scale.value = withSpring(1))}
-      onPress={onPress}>
+      onPressIn={() => {
+        scale.value = withSpring(0.95);
+        opacity.value = withTiming(0.8, {duration: 100});
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1);
+        opacity.value = withTiming(1, {duration: 100});
+      }}
+      onPress={handlePress}
+      android_ripple={{color: colors.textSecondary, borderless: false}} // Ripple effect for Android
+    >
       <Animated.View style={[styles.buttonContainer, animatedStyle]}>
         <Button
           mode="contained"
           style={[styles.button, {backgroundColor}]}
-          onPress={onPress}>
+          onPress={handlePress}>
           {title}
         </Button>
       </Animated.View>
@@ -45,6 +62,7 @@ const CustomButton: React.FC<ButtonProps> = ({
 const styles = StyleSheet.create({
   buttonContainer: {
     marginVertical: 8,
+    overflow: 'hidden',
   },
   button: {
     paddingVertical: 10,

@@ -2,15 +2,19 @@ import React, {useState} from 'react';
 import {View, StyleSheet} from 'react-native';
 import {BottomNavigation} from 'react-native-paper';
 import DashboardScreen from '../screens/DashboardScreen';
-import ShiftsScreen from '../screens/ShiftsScreen'; // Placeholder
-import MessagesScreen from '../screens/MessagesScreen'; // Placeholder
-import MoreScreen from '../screens/MoreScreen'; // Placeholder
+import ShiftsScreen from '../screens/ShiftsScreen';
+import MessagesScreen from '../screens/MessagesScreen';
+import MoreScreen from '../screens/MoreScreen';
 import colors from '../assets/colors';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
+import {createStackNavigator, TransitionPresets} from '@react-navigation/stack';
+import {NavigationContainer} from '@react-navigation/native';
+
+const Stack = createStackNavigator();
 
 // Define tab routes
 const DashboardRoute = () => <DashboardScreen />;
@@ -18,7 +22,8 @@ const ShiftsRoute = () => <ShiftsScreen />;
 const MessagesRoute = () => <MessagesScreen />;
 const MoreRoute = () => <MoreScreen />;
 
-const AppNavigator: React.FC = () => {
+// Bottom Navigation Component
+const BottomTabs: React.FC = () => {
   const [index, setIndex] = useState(0);
   const [routes] = useState([
     {
@@ -79,6 +84,27 @@ const AppNavigator: React.FC = () => {
     </View>
   );
 };
+
+// Stack Navigator for Smooth Transitions
+const StackNavigator = () => (
+  <Stack.Navigator
+    screenOptions={{
+      headerShown: false,
+      gestureEnabled: true,
+      ...TransitionPresets.SlideFromRightIOS, // Adds sliding animation
+    }}>
+    <Stack.Screen name="MainTabs" component={BottomTabs} />
+    <Stack.Screen name="Messages" component={MessagesScreen} />
+    <Stack.Screen name="More" component={MoreScreen} />
+  </Stack.Navigator>
+);
+
+// Root Navigator
+const AppNavigator = () => (
+  <NavigationContainer>
+    <StackNavigator />
+  </NavigationContainer>
+);
 
 const styles = StyleSheet.create({
   container: {
