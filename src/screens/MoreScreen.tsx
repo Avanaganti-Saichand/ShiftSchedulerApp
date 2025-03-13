@@ -3,11 +3,34 @@ import {View, StyleSheet, ScrollView} from 'react-native';
 import {Text, Avatar, List, Switch, Divider} from 'react-native-paper';
 import LinearGradient from 'react-native-linear-gradient';
 import Animated, {FadeInUp} from 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useNavigation} from '@react-navigation/native';
+import {StackNavigationProp} from '@react-navigation/stack';
 import colors from '../assets/colors';
 
+// ✅ Define correct navigation type
+type RootStackParamList = {
+  Auth: undefined;
+  BottomTabs: undefined;
+};
+
 const MoreScreen: React.FC = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+
+  // 🔹 Handle Logout
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.removeItem('authToken'); // ✅ Remove token
+      console.log('🔓 User logged out, navigating to LoginScreen...');
+
+      navigation.replace('Auth'); // ✅ Corrected navigation
+    } catch (error) {
+      console.error('❌ Logout Error:', error);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -33,7 +56,7 @@ const MoreScreen: React.FC = () => {
               title="Notifications"
               left={props => <List.Icon {...props} icon="bell" />}
               right={() => (
-                <Switch
+                <NotificationSwitch
                   value={notificationsEnabled}
                   onValueChange={() =>
                     setNotificationsEnabled(!notificationsEnabled)
@@ -47,7 +70,7 @@ const MoreScreen: React.FC = () => {
               title="Dark Mode"
               left={props => <List.Icon {...props} icon="theme-light-dark" />}
               right={() => (
-                <Switch
+                <DarkModeSwitch
                   value={darkModeEnabled}
                   onValueChange={() => setDarkModeEnabled(!darkModeEnabled)}
                 />
@@ -82,13 +105,14 @@ const MoreScreen: React.FC = () => {
             />
             <Divider />
 
+            {/* ✅ Updated Logout Button */}
             <List.Item
               title="Logout"
               left={props => (
                 <List.Icon {...props} icon="logout" color={colors.danger} />
               )}
               titleStyle={{color: colors.danger}}
-              onPress={() => console.log('Logged out')}
+              onPress={handleLogout} // ✅ Call logout function
             />
           </List.Section>
         </Animated.View>
@@ -125,5 +149,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
+// ✅ Moved Components Outside the Parent Component
+const NotificationSwitch: React.FC<{
+  value: boolean;
+  onValueChange: () => void;
+}> = ({value, onValueChange}) => (
+  <Switch value={value} onValueChange={onValueChange} />
+);
+
+const DarkModeSwitch: React.FC<{value: boolean; onValueChange: () => void}> = ({
+  value,
+  onValueChange,
+}) => <Switch value={value} onValueChange={onValueChange} />;
 
 export default MoreScreen;

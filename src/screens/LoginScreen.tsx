@@ -1,37 +1,50 @@
 import React, {useState} from 'react';
 import {View, StyleSheet} from 'react-native';
-import {Text, TextInput, ActivityIndicator} from 'react-native-paper';
+import {TextInput, ActivityIndicator, Snackbar} from 'react-native-paper';
 import CustomButton from '../components/CustomButton';
 import LinearGradient from 'react-native-linear-gradient';
 import Animated, {FadeInDown, FadeInUp} from 'react-native-reanimated';
 import colors from '../assets/colors';
+import AuthService from '../services/authService';
+import {useNavigation} from '@react-navigation/native'; // ✅ Import navigation
 import {StackNavigationProp} from '@react-navigation/stack';
+import NAVIGATION_ENDPOINTS from '../constants/apiEndpoints'; // ✅ Use navigation constants
 
+// ✅ Define correct navigation type
 type RootStackParamList = {
-  Login: undefined;
-  Dashboard: undefined;
+  BottomTabs: undefined;
+  Auth: undefined;
 };
 
-type LoginScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  'Login'
->;
-
-interface Props {
-  navigation: LoginScreenNavigationProp;
-}
-
-const LoginScreen: React.FC<Props> = ({navigation}) => {
+const LoginScreen: React.FC = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setLoading(true);
-    setTimeout(() => {
+    try {
+      console.log('Logging in with:', {username, password});
+
+      // 🔹 Call API for login
+      await AuthService.login(username, password);
       setLoading(false);
-      navigation.navigate('Dashboard');
-    }, 2000);
+
+      console.log('✅ Login successful. Navigating to BottomTabs...');
+
+      // ✅ Navigate to Main App (BottomTabs)
+      navigation.reset({
+        index: 0,
+        routes: [{name: NAVIGATION_ENDPOINTS.STACKS.BOTTOM_TABS}],
+      });
+    } catch (error: any) {
+      setLoading(false);
+      setErrorMessage(
+        error.response?.data?.error || 'Login failed. Please try again.',
+      );
+    }
   };
 
   return (
@@ -77,6 +90,15 @@ const LoginScreen: React.FC<Props> = ({navigation}) => {
           <CustomButton title="Login" onPress={handleLogin} />
         )}
       </Animated.View>
+
+      {/* Error Snackbar */}
+      <Snackbar
+        visible={!!errorMessage}
+        onDismiss={() => setErrorMessage('')}
+        duration={3000}
+        style={styles.snackbar}>
+        {errorMessage}
+      </Snackbar>
     </View>
   );
 };
@@ -104,6 +126,9 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 15,
     backgroundColor: 'white',
+  },
+  snackbar: {
+    backgroundColor: colors.danger,
   },
 });
 
