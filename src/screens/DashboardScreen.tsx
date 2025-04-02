@@ -1,17 +1,58 @@
-import React from 'react';
-import {View, StyleSheet, FlatList} from 'react-native';
-import {Text, Card, Avatar, FAB} from 'react-native-paper';
+import React, {useState, useEffect} from 'react';
+import {View, StyleSheet, FlatList, RefreshControl, Alert} from 'react-native';
+import {Text, Card, Avatar, FAB, ActivityIndicator} from 'react-native-paper';
 import LinearGradient from 'react-native-linear-gradient';
 import Animated, {FadeInUp} from 'react-native-reanimated';
 import colors from '../assets/colors';
-
-const shifts = [
-  {id: '1', title: 'Morning Shift', time: '8:00 AM - 4:00 PM'},
-  {id: '2', title: 'Evening Shift', time: '4:00 PM - 12:00 AM'},
-  {id: '3', title: 'Night Shift', time: '12:00 AM - 8:00 AM'},
-];
+import ShiftService from '../services/shiftService';
 
 const DashboardScreen: React.FC = () => {
+  interface Shift {
+    id: number;
+    title: string;
+    start_time: string;
+    end_time: string;
+  }
+
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false); // ✅ New state to track admin
+
+  // 🔹 Fetch shifts from API
+  const fetchShifts = async () => {
+    try {
+      setLoading(true);
+      const response = await ShiftService.getUserDashboard(); // ✅ Correct API call
+      console.log('🔹 API Response:', response);
+
+      setShifts(response.assignedShifts || []);
+      setRole(response.role);
+      setIsAdmin(response.role === 'admin'); // ✅ Determine if user is admin
+    } catch (error: any) {
+      console.error('❌ Failed to fetch shifts:', error.message);
+      Alert.alert(
+        'Error',
+        error.response?.data?.error || 'Failed to load shifts.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔹 Fetch shifts on mount
+  useEffect(() => {
+    fetchShifts();
+  }, []);
+
+  // 🔹 Handle pull-to-refresh
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchShifts();
+    setRefreshing(false);
+  };
+
   return (
     <View style={styles.container}>
       {/* Gradient Header */}
@@ -22,35 +63,59 @@ const DashboardScreen: React.FC = () => {
           size={60}
           source={{uri: 'https://i.pravatar.cc/150?img=3'}}
         />
-        <Text style={styles.headerText}>Welcome, User</Text>
-        <Text style={styles.headerSubText}>Your upcoming shifts</Text>
+        <Text style={styles.headerText}>
+          {role
+            ? `Welcome, ${role === 'admin' ? 'Admin!' : 'Employee!'}`
+            : 'Loading...'}
+        </Text>
+        <Text style={styles.headerSubText}>
+          {isAdmin ? 'Manage All Shifts' : 'Your Upcoming Shifts'}
+        </Text>
       </LinearGradient>
 
-      {/* Shift List with Animated Cards */}
-      <FlatList
-        data={shifts}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.contentContainer} // Fixed
-        renderItem={({item, index}) => (
-          <Animated.View entering={FadeInUp.delay(index * 100).duration(500)}>
-            <Card style={styles.shiftCard}>
-              <Card.Title
-                title={item.title}
-                subtitle={item.time}
-                left={props => <Avatar.Icon {...props} icon="clock-outline" />}
-              />
-            </Card>
-          </Animated.View>
-        )}
-      />
+      {/* 🔹 Show loading state */}
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color={colors.primary}
+          style={styles.loader}
+        />
+      ) : (
+        <FlatList
+          data={shifts}
+          keyExtractor={item => item.id.toString()}
+          contentContainerStyle={styles.contentContainer}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+          renderItem={({item, index}) => (
+            <Animated.View entering={FadeInUp.delay(index * 100).duration(500)}>
+              <Card style={styles.shiftCard}>
+                <Card.Title
+                  title={item.title}
+                  subtitle={`${item.start_time} - ${item.end_time}`}
+                  left={props => (
+                    <Avatar.Icon {...props} icon="clock-outline" />
+                  )}
+                />
+              </Card>
+            </Animated.View>
+          )}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No shifts available</Text>
+          }
+        />
+      )}
 
-      {/* Floating Action Button for Quick Actions */}
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        color="white"
-        onPress={() => console.log('Add Shift')}
-      />
+      {/* 🔹 Floating Action Button for Admins Only */}
+      {isAdmin && (
+        <FAB
+          icon="plus"
+          style={styles.fab}
+          color="white"
+          onPress={() => console.log('Admin Adding Shift')}
+        />
+      )}
     </View>
   );
 };
@@ -81,11 +146,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textPrimary,
   },
+  loader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   shiftCard: {
     marginBottom: 10,
     backgroundColor: 'white',
     borderRadius: 12,
-    elevation: 4, // Adds shadow
+    elevation: 4,
+  },
+  emptyText: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: colors.textSecondary,
+    marginTop: 20,
   },
   fab: {
     position: 'absolute',

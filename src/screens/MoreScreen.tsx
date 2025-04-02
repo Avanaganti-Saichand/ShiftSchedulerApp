@@ -4,9 +4,11 @@ import {Text, Avatar, List, Switch, Divider} from 'react-native-paper';
 import LinearGradient from 'react-native-linear-gradient';
 import Animated, {FadeInUp} from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useNavigation} from '@react-navigation/native';
+import {CommonActions, useNavigation} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
 import colors from '../assets/colors';
+import NAVIGATION_ENDPOINTS from '../constants/navigationEndpoints';
+import AuthService from '../services/authService';
 
 // ✅ Define correct navigation type
 type RootStackParamList = {
@@ -21,14 +23,24 @@ const MoreScreen: React.FC = () => {
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
 
   // 🔹 Handle Logout
+
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem('authToken'); // ✅ Remove token
-      console.log('🔓 User logged out, navigating to LoginScreen...');
+      console.log('🔓 Logging out...');
+      const response = await AuthService.logout();
+      console.log('🔓 Logout response:', response);
 
-      navigation.replace('Auth'); // ✅ Corrected navigation
+      if (response.success) {
+        console.log('✅ Logout successful. Navigating to Login...');
+        navigation.reset({
+          index: 0,
+          routes: [{name: NAVIGATION_ENDPOINTS.STACKS.AUTH_STACK}],
+        });
+      } else {
+        throw new Error(response.error);
+      }
     } catch (error) {
-      console.error('❌ Logout Error:', error);
+      console.error('❌ Logout Error:', error.message);
     }
   };
 

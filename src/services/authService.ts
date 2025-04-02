@@ -30,11 +30,26 @@ const AuthService = {
   },
 
   // 🔹 Logout User
+  // 🔹 Logout User (with API Call and Proper Error Handling)
   logout: async () => {
     try {
+      // 🔹 If backend has a logout API, call it (optional)
+      await api.post(API_ENDPOINTS.AUTH.LOGOUT);
+
+      // ✅ Remove token from storage
       await AsyncStorage.removeItem('authToken');
-    } catch (error) {
-      throw error;
+
+      console.log('✅ Logout successful. Token removed.');
+      return {success: true};
+    } catch (error: any) {
+      console.error(
+        '❌ Logout failed:',
+        error?.response?.data || error.message,
+      );
+      return {
+        success: false,
+        error: error?.response?.data?.error || 'Logout failed',
+      };
     }
   },
 };

@@ -25,24 +25,26 @@ const LoginScreen: React.FC = () => {
 
   const handleLogin = async () => {
     setLoading(true);
+    setErrorMessage(''); // Clear previous errors
+
     try {
       console.log('Logging in with:', {username, password});
 
       // 🔹 Call API for login
-      await AuthService.login(username, password);
-      setLoading(false);
+      const response = await AuthService.login(username, password);
 
-      console.log('✅ Login successful. Navigating to BottomTabs...');
-
-      // ✅ Navigate to Main App (BottomTabs)
-      navigation.reset({
-        index: 0,
-        routes: [{name: NAVIGATION_ENDPOINTS.STACKS.BOTTOM_TABS}],
-      });
+      if (response?.token) {
+        console.log('✅ Login successful. Navigating to BottomTabs...');
+        console.log('🔑 Received token:', JSON.stringify(response));
+        setLoading(false);
+      } else {
+        throw new Error(response?.error || 'Invalid response from server');
+      }
     } catch (error: any) {
       setLoading(false);
+      console.error('❌ Login failed:', error?.message || error);
       setErrorMessage(
-        error.response?.data?.error || 'Login failed. Please try again.',
+        error?.response?.data?.error || 'Login failed. Please try again.',
       );
     }
   };

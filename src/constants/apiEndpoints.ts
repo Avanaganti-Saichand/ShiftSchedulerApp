@@ -7,6 +7,7 @@ const API_ENDPOINTS = {
   },
   SHIFTS: {
     GET_ALL: '/shifts',
+    GET_USER_DASHBOARD: '/shifts/user-dashboard', // ✅ NEW
     CREATE: '/shifts',
     UPDATE: (id: number) => `/shifts/${id}`,
     DELETE: (id: number) => `/shifts/${id}`,

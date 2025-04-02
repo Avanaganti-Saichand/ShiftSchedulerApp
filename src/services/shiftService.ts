@@ -12,6 +12,16 @@ const ShiftService = {
     }
   },
 
+  // ✅ NEW: Fetch User Role & Assigned Shifts for Dashboard
+  getUserDashboard: async () => {
+    try {
+      const response = await api.get(API_ENDPOINTS.SHIFTS.GET_USER_DASHBOARD);
+      return response.data; // Returns { role, assignedShifts }
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // 🔹 Claim a shift
   claimShift: async (shiftId: number) => {
     try {
